@@ -1,5 +1,6 @@
 package com.unideptsystem.exception;
 
+import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -31,7 +32,7 @@ public class GlobalExceptionHandler {
         Map<String,String> fieldErrors = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .collect(Collectors.toMap(FieldError::getField, fe -> fe.getDefaultMessage(), (a, b) -> a));
+                .collect(Collectors.toMap(FieldError::getField, DefaultMessageSourceResolvable::getDefaultMessage, (a, b) -> a));
         Map<String,Object> details = new LinkedHashMap<>();
         details.put("fieldErrors", fieldErrors);
         err.setDetails(details);
@@ -65,10 +66,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiError> handleDataIntegrity(DataIntegrityViolationException ex) {
         String msg = "Database error: constraint violation or invalid data.";
-        if (ex.getMostSpecificCause() != null) {
-            String cause = ex.getMostSpecificCause().getMessage();
-            msg = msg + " (" + (cause.length() > 200 ? cause.substring(0,200) + "..." : cause) + ")";
-        }
+        ex.getMostSpecificCause();
+        String cause = ex.getMostSpecificCause().getMessage();
+        msg = msg + " (" + (cause.length() > 200 ? cause.substring(0,200) + "..." : cause) + ")";
         ApiError err = new ApiError(HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST.getReasonPhrase(), msg);
         err.setCode("DATA_INTEGRITY_VIOLATION");
         return new ResponseEntity<>(err, HttpStatus.BAD_REQUEST);
@@ -87,7 +87,7 @@ public class GlobalExceptionHandler {
     }
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiError> handleJsonParse(HttpMessageNotReadableException ex) {
-        String friendly = "Malformed JSON request";
+        String friendly;
         Map<String, Object> details = new LinkedHashMap<>();
         Throwable cause = ex.getMostSpecificCause();
 
@@ -99,11 +99,9 @@ public class GlobalExceptionHandler {
             friendly = "JSON mapping error: " + mie.getMessage();
             details.put("type", "MismatchedInputException");
             details.put("path", mie.getPathReference());
-        } else if (cause != null) {
+        } else {
             friendly = "Malformed JSON: " + cause.getMessage();
             details.put("type", cause.getClass().getSimpleName());
-        } else {
-            friendly = ex.getMessage();
         }
 
         ApiError err = new ApiError(HttpStatus.BAD_REQUEST.value(),

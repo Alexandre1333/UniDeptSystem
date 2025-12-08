@@ -1,9 +1,14 @@
 package com.unideptsystem.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.ArrayList;
 import java.util.List;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "departments")
 public class Department {
@@ -21,14 +26,6 @@ public class Department {
     public Department() {}
     public Department(String name, String location) { this.name = name; this.location = location; }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public String getLocation() { return location; }
-    public void setLocation(String location) { this.location = location; }
-    public List<Professor> getProfessors() { return professors; }
-    public void setProfessors(List<Professor> professors) { this.professors = professors; }
     public void addProfessor(Professor p) { professors.add(p); p.setDepartment(this); }
     public void removeProfessor(Professor p) { professors.remove(p); p.setDepartment(null); }
 }
